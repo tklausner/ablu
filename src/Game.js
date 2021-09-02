@@ -26,16 +26,30 @@ class Game extends React.Component {
 
     // Create map of Squares to Number Bid
     let valMap = new Map();
+    let wInd = -1;
+
     vals.forEach(e => {
-      valMap[e] = 0;
+      // valMap[e] = 0;
+
+      // test
+      let numBids = Math.floor(Math.random() * 3);
+      valMap[e] = numBids;
+      if (wInd === -1 && numBids === 0) {
+        wInd = e;
+      }
+
     });
 
     this.state = {
       vals: vals,
       board: valMap,
-      wIndex: 1000,
-      balance: 100,
+      pot: 0,
+      players: 0,
+      id: -1,
+      wIndex: wInd,
+      balance: 10,
       infoMode: true,
+      playerMap: new Map(),
     };
   }
   render() {
@@ -44,7 +58,21 @@ class Game extends React.Component {
 
     return (
       <div>
-        <h3>{this.state.balance}</h3>
+        <div class="divRow">
+          <Paper className={classes.paper} id="count"><p id="balContent">{this.state.players + " ppl"}</p></Paper>
+          <Paper className={classes.paper} id="pot"><p id="balContent">{this.state.pot + "°"}</p></Paper>
+          <Grid container className={classes.root} id="timer">
+            <Grid item xs={10} >
+              <Grid container justifyContent="center" spacing={2} >
+                {[0, 1, 2, 3].map((id) => (
+                  <Grid key={id} item>
+                    <Paper className={classes.paper}> <p id="timerContent" class="bar">{this.timer(id)}</p></Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            </Grid>
+          </Grid>
+        </div>
         <Grid container className={classes.root} spacing={2}>
           <Grid item xs={12}>
             <Grid container justifyContent="center" >
@@ -60,23 +88,69 @@ class Game extends React.Component {
             </Grid>
           </Grid>
         </Grid>
-        <Grid container className={classes.root} spacing={2}>
-          <Grid item xs={4}>
-            <Grid container justifyContent="center" >
-              {[0, 1, 2, 3].map((id) => (
-                <Grid key={id} item>
-                  <Button onClick={(e => {
-                    this.barPressed(id)
-                  })}>
-                    <Paper className={classes.paper} style={{ backgroundColor: this.barBackground(id) }} />
-                  </Button>
-                </Grid>
-              ))}
+
+        <div class="divCol">
+          <Grid container className={classes.root} spacing={2}>
+            <Grid item xs={12}>
+              <Grid container justifyContent="center" >
+                {[0, 1, 2, 3].map((id) => (
+                  <Grid key={id} item>
+                    <Button onClick={(e => {
+                      this.state.infoMode ? this.infoBarPressed(id) : this.buyBarPressed(id)
+                    })}>
+                      <Paper className={classes.paper} style={{ backgroundColor: this.barBackground(id) }}><p class="bar">{this.barContent(id)}</p></Paper>
+                    </Button>
+                  </Grid>
+                ))}
+              </Grid>
             </Grid>
           </Grid>
-        </Grid>
-      </div>
+          <Paper className={classes.paper} id="aux"><p id="balContent">{!this.state.infoMode ? this.state.balance + "°" : ""}</p></Paper>
+        </div>
+      </div >
     );
+  }
+
+  timer(index) {
+    switch (index) {
+      case 0:
+        return new Date().getHours();
+      case 1:
+        return new Date().getMinutes();
+      case 2:
+        return new Date().getSeconds();
+      case 3:
+        return "X"
+      default:
+        console.log("ERROR");
+        break;
+    }
+  }
+
+  switchState(arr) {
+    if (this.state.playerMap[this.state.id]) {
+      return this.state.id === this.state.wIndex ? arr[0] : this.state.board[this.state.id] === 1 ? arr[1] : arr[2];
+    } else {
+      return arr[3]
+    }
+  }
+
+  barContent(index) {
+    if (!this.state.infoMode) {
+      switch (index) {
+        case 0:
+          return "" + this.state.id
+        case 1:
+          return this.switchState(["L", "U", "N", "Y"])
+        case 2:
+          return this.switchState(["O", "N", "O", "N"])
+        case 3:
+          return this.switchState(["W", "I", "T", "1°"])
+        default:
+          console.log("ERROR");
+          break;
+      }
+    }
   }
 
   barBackground(id) {
@@ -100,6 +174,7 @@ class Game extends React.Component {
           return "#000"
       }
     }
+    return "#fcfcfc"
   }
 
   background(id, numBids) {
@@ -109,17 +184,27 @@ class Game extends React.Component {
     const uni = "#D2F2C7";
     const low = "#FFF4C7";
 
+    let highlight = "";
+
+    if (this.state.id === id) {
+      highlight = "59";
+    }
+
+    if (!this.state.playerMap[id]) {
+      return base + highlight;
+    }
+
     if (this.state.wIndex === id) {
       return low;
     }
 
     switch (numBids) {
       case 0:
-        return base;
+        return base + highlight;
       case 1:
-        return uni;
+        return uni + highlight;
       default:
-        return not;
+        return not + highlight;
     }
   }
 
@@ -129,30 +214,22 @@ class Game extends React.Component {
       console.log("winning")
     }
     this.state.board[val] += 1;
+    this.state.playerMap[val] = true
 
-    console.log(val, this.state.board[val])
-
-    this.setState(
-      {},
-    )
+    this.setState({
+      pot: this.state.pot + 1
+    })
   }
 
   squarePressed(val) {
-    //alert("Are you sure you want to buy this?")
     this.setState({
-      infoMode: false
+      infoMode: false,
+      id: val
     })
-    if (this.state.balance > 0) {
-      this.setState({
-        balance: this.state.balance - 20
-      })
-      this.buySquare(val);
-    }
   }
 
-  barPressed(id) {
-
-    switch (id) {
+  infoBarPressed(index) {
+    switch (index) {
       case 0:
         console.log("more info on base");
         break;
@@ -170,9 +247,27 @@ class Game extends React.Component {
         break;
     }
   }
+  buyBarPressed(index) {
+    this.setState({
+      infoMode: true,
+      id: -1,
+    })
+    switch (index) {
+      case 1:
+        if (this.state.balance > 0) {
+          this.setState({
+            balance: this.state.balance - 1
+          })
+          this.buySquare(this.state.id);
+        }
+        break;
+      default:
+        break;
+    }
+  }
 
   calcWindex(val) {
-    if (val < this.state.wIndex) {
+    if (val < this.state.wIndex && this.state.board[val] <= this.state.board[this.state.wIndex]) {
       this.setState({
         wIndex: val
       })
