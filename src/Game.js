@@ -4,7 +4,7 @@ import { withStyles } from "@material-ui/core/styles";
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import { Button } from '@material-ui/core';
-import { createTiles, getUsers, getTile, getTiles, updateTile } from "./util"
+import { createTiles, getUserBids, getTile, getTiles, updateTile } from "./util"
 
 const styles = theme => ({
   root: {
@@ -21,12 +21,14 @@ class Game extends React.Component {
 
   async componentDidMount() {
     let tiles = await getTiles();
-    console.log(tiles.length);
+    let bids = await getUserBids("Lennon");
+
     if (tiles.length < 100) {
       // createTiles();
     }
     this.setState({
-      tiles: tiles
+      tiles: tiles,
+      playerMap: bids
     })
     this.initBoard()
   }
@@ -43,7 +45,7 @@ class Game extends React.Component {
       balance: 10,
       infoMode: true,
       playerMap: new Map(),
-      tiles: []
+      tiles: new Map(),
     };
   }
 
@@ -52,11 +54,11 @@ class Game extends React.Component {
     let valMap = new Map();
 
     indices.forEach(e => {
-      valMap[e] = this.state.tiles[e].bids.length;
+      valMap[e] = this.state.tiles[e].length;
     });
     this.setState({
       board: valMap,
-      indices: indices
+      indices: indices,
     })
   }
 
@@ -198,14 +200,13 @@ class Game extends React.Component {
     if (this.state.id === id) {
       highlight = "59";
     }
-
     if (!this.state.playerMap[id]) {
       return base + highlight;
     }
-
     if (this.state.wIndex === id) {
       return low;
     }
+    console.log("ID", numBids)
 
     switch (numBids) {
       case 0:
@@ -226,11 +227,10 @@ class Game extends React.Component {
     this.state.playerMap[val] = true
 
     this.setState({
-      pot: this.state.pot + 1
+      pot: this.state.pot + 1,
     })
 
     updateTile(val, "person")
-
   }
 
   squarePressed(val) {

@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from "firebase/firestore";
 import { firebaseConfig } from "./firebase";
-import { collection, addDoc, getDocs, updateDoc, query, where, doc } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, query, where, doc, getDoc } from "firebase/firestore";
 
 
 const app = initializeApp(firebaseConfig);
@@ -27,15 +27,22 @@ export async function getUsers() {
   });
 }
 
+export async function getUserBids(last) {
+  let q = query(collection(db, "users"), where("last", "==", last));
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs[0].data().bids
+  } catch (e) {
+    console.error("Error getting document: ", e);
+  }
+}
+
 export async function getTiles() {
   const querySnapshot = await getDocs(collection(db, "tiles"));
-  let tiles = []
+  let tiles = new Map()
   querySnapshot.forEach((doc) => {
     console.log(`${doc.id} => ${doc.data().id}`);
-    tiles.push({
-      id: doc.data().id,
-      bids: doc.data().bids
-    })
+    tiles[doc.data().id] = doc.data().bids
   });
   return tiles
 }
@@ -61,6 +68,7 @@ export async function getTile(id) {
     querySnapshot.forEach((doc) => {
       console.log(`${doc.id} => ${doc.data().id}`);
       return {
+        _id: doc.id,
         id: doc.data().id,
         bids: doc.data().bids
       }
@@ -70,25 +78,40 @@ export async function getTile(id) {
   }
 }
 
-async function queryID(id) {
+export async function queryID(id) {
   let q = query(collection(db, "tiles"), where("id", "==", id));
-  const docs = await getDocs(q);
-  docs.forEach((doc) => {
-    return doc.id
-  });
-}
-
-
-export async function updateTile(id, bid) {
-  let _id = queryID(id);
+  let _id = ""
   try {
-    await updateDoc(collection(db, "tiles/" + _id), {
-      bids: ["hi"]
+    const docs = await getDocs(q);
+    docs.forEach((doc) => {
+      console.log(`${doc.id} = ${doc.data().id}`);
+      _id = doc.id
     });
-
-
   } catch (e) {
-    console.error("Error updating document: ", e);
+    console.error("Error getting document: ", e);
   }
-
+  return _id
 }
+
+
+export async function updateTile(id, newBid) {
+  // get tile data
+  let _id = await queryID(id)
+  let docRef = doc(db, "tiles", _id);
+  const querySnapshot = await getDoc(docRef);
+  console.log(querySnapshot.data())
+
+  let bids = querySnapshot.data().bids;
+
+  // update tile
+  bids.push(newBid);
+  console.log(bids);
+
+  try {
+    await updateDoc(docRef, "bids", bids);
+    console.log("Updated document")
+  } catch (e) {
+    console.error("Error getting document: ", e);
+  }
+}
+
