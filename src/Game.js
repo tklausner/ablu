@@ -4,6 +4,7 @@ import { withStyles } from "@material-ui/core/styles";
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import { Button } from '@material-ui/core';
+import { createTiles, getUsers, getTile, getTiles, updateTile } from "./util"
 
 const styles = theme => ({
   root: {
@@ -18,40 +19,47 @@ const styles = theme => ({
 
 class Game extends React.Component {
 
+  async componentDidMount() {
+    let tiles = await getTiles();
+    console.log(tiles.length);
+    if (tiles.length < 100) {
+      // createTiles();
+    }
+    this.setState({
+      tiles: tiles
+    })
+    this.initBoard()
+  }
+
   constructor(props) {
     super(props);
-
-    // Create Square IDS
-    let vals = [...Array(100).keys()];
-
-    // Create map of Squares to Number Bid
-    let valMap = new Map();
-    let wInd = -1;
-
-    vals.forEach(e => {
-      // valMap[e] = 0;
-
-      // test
-      let numBids = Math.floor(Math.random() * 3);
-      valMap[e] = numBids;
-      if (wInd === -1 && numBids === 0) {
-        wInd = e;
-      }
-
-    });
-
     this.state = {
-      vals: vals,
-      board: valMap,
+      indices: [],
+      board: new Map(),
       pot: 0,
-      players: 0,
+      players: 1,
       id: -1,
-      wIndex: wInd,
+      wIndex: 0,
       balance: 10,
       infoMode: true,
       playerMap: new Map(),
+      tiles: []
     };
   }
+
+  initBoard() {
+    let indices = [...Array(100).keys()];
+    let valMap = new Map();
+
+    indices.forEach(e => {
+      valMap[e] = this.state.tiles[e].bids.length;
+    });
+    this.setState({
+      board: valMap,
+      indices: indices
+    })
+  }
+
   render() {
 
     const { classes } = this.props;
@@ -76,7 +84,7 @@ class Game extends React.Component {
         <Grid container className={classes.root} spacing={2}>
           <Grid item xs={12}>
             <Grid container justifyContent="center" >
-              {this.state.vals.map((value) => (
+              {this.state.indices.map((value) => (
                 <Grid key={value} item>
                   <Button onClick={(e => {
                     this.squarePressed(value)
@@ -105,20 +113,21 @@ class Game extends React.Component {
               </Grid>
             </Grid>
           </Grid>
-          <Paper className={classes.paper} id="aux"><p id="balContent">{!this.state.infoMode ? this.state.balance + "°" : ""}</p></Paper>
+          {!this.state.infoMode ? <Paper className={classes.paper} id="aux"><p id="balContent">{this.state.balance + "°"}</p></Paper> : null}
         </div>
       </div >
     );
   }
 
   timer(index) {
+    return ""
     switch (index) {
       case 0:
-        return new Date().getHours();
+        return "1"
       case 1:
-        return new Date().getMinutes();
+        return "35"
       case 2:
-        return new Date().getSeconds();
+        return "20"
       case 3:
         return "X"
       default:
@@ -219,6 +228,9 @@ class Game extends React.Component {
     this.setState({
       pot: this.state.pot + 1
     })
+
+    updateTile(val, "person")
+
   }
 
   squarePressed(val) {
@@ -226,6 +238,7 @@ class Game extends React.Component {
       infoMode: false,
       id: val
     })
+    getTile(val)
   }
 
   infoBarPressed(index) {
