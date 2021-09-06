@@ -4,7 +4,7 @@ import { withStyles } from "@material-ui/core/styles";
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import { Button } from '@material-ui/core';
-import { createTiles, getUserBids, getTile, getTiles, updateTile } from "./util"
+import { createTiles, getUser, getTile, getTiles, updateTile, updatePlayer, getUsers, getGameState, updateGameState } from "./util"
 
 const styles = theme => ({
   root: {
@@ -20,17 +20,39 @@ const styles = theme => ({
 class Game extends React.Component {
 
   async componentDidMount() {
-    let tiles = await getTiles();
-    let bids = await getUserBids("Lennon");
 
-    if (tiles.length < 100) {
-      // createTiles();
+    // load map of tiles: id -> bids[]
+    let tiles = await getTiles();
+
+    // load bids from user by last name
+    let { bids, balance, first, last } = await getUser("McCartney");
+
+    // get game state
+    let { pot, id, lub, memMap } = await getGameState("main");
+
+    if (tiles.size === 0) {
+      createTiles();
     }
-    this.setState({
-      tiles: tiles,
-      playerMap: bids
-    })
-    this.initBoard()
+
+    // get player list
+    let playerList = await getUsers();
+
+    // set local state
+    this.setState(() => ({
+      playerMap: bids,
+      user: {
+        first: first,
+        last: last,
+        balance: balance
+      },
+      players: playerList.length,
+      pot: pot,
+      gameState: id,
+      wIndex: lub,
+      memMap: memMap
+    }))
+
+    this.initBoard(tiles)
   }
 
   constructor(props) {
@@ -41,34 +63,46 @@ class Game extends React.Component {
       pot: 0,
       players: 1,
       id: -1,
-      wIndex: 0,
-      balance: 10,
+      wIndex: -1,
+      user: {
+        first: "first",
+        last: "last",
+        balance: -1
+      },
       infoMode: true,
       playerMap: new Map(),
-      tiles: new Map(),
+      loading: true,
+      gameState: "none",
+      memMap: new Map()
     };
   }
 
-  initBoard() {
+  initBoard(tiles) {
     let indices = [...Array(100).keys()];
     let valMap = new Map();
 
     indices.forEach(e => {
-      valMap[e] = this.state.tiles[e].length;
+      valMap.set(e, tiles.get(e).length);
     });
-    this.setState({
+    this.setState(() => ({
       board: valMap,
       indices: indices,
-    })
+      loading: false,
+    }))
+    this.greeting()
+  }
+
+  greeting() {
+    console.log("Welcome " + this.state.user.first + " " + this.state.user.last + "!")
   }
 
   render() {
 
     const { classes } = this.props;
 
-    return (
+    return !this.state.loading ? (
       <div>
-        <div class="divRow">
+        <div className="divRow" >
           <Paper className={classes.paper} id="count"><p id="balContent">{this.state.players + " ppl"}</p></Paper>
           <Paper className={classes.paper} id="pot"><p id="balContent">{this.state.pot + "°"}</p></Paper>
           <Grid container className={classes.root} id="timer">
@@ -76,7 +110,7 @@ class Game extends React.Component {
               <Grid container justifyContent="center" spacing={2} >
                 {[0, 1, 2, 3].map((id) => (
                   <Grid key={id} item>
-                    <Paper className={classes.paper}> <p id="timerContent" class="bar">{this.timer(id)}</p></Paper>
+                    <Paper className={classes.paper}> <p id="timerContent" className="bar">{this.timer(id)}</p></Paper>
                   </Grid>
                 ))}
               </Grid>
@@ -91,15 +125,14 @@ class Game extends React.Component {
                   <Button onClick={(e => {
                     this.squarePressed(value)
                   })}>
-                    <Paper className={classes.paper} style={{ backgroundColor: this.background(value, this.state.board[value]) }} />
+                    <Paper className={classes.paper} style={{ backgroundColor: this.tileBackground(value, this.state.board.get(value)) }} />
                   </Button>
                 </Grid>
               ))}
             </Grid>
           </Grid>
         </Grid>
-
-        <div class="divCol">
+        <div className="divCol">
           <Grid container className={classes.root} spacing={2}>
             <Grid item xs={12}>
               <Grid container justifyContent="center" >
@@ -108,39 +141,26 @@ class Game extends React.Component {
                     <Button onClick={(e => {
                       this.state.infoMode ? this.infoBarPressed(id) : this.buyBarPressed(id)
                     })}>
-                      <Paper className={classes.paper} style={{ backgroundColor: this.barBackground(id) }}><p class="bar">{this.barContent(id)}</p></Paper>
+                      <Paper className={classes.paper} style={{ backgroundColor: this.barBackground(id) }}><p className="bar">{this.barContent(id)}</p></Paper>
                     </Button>
                   </Grid>
                 ))}
               </Grid>
             </Grid>
           </Grid>
-          {!this.state.infoMode ? <Paper className={classes.paper} id="aux"><p id="balContent">{this.state.balance + "°"}</p></Paper> : null}
+          {!this.state.infoMode ? <Paper className={classes.paper} id="aux"><p id="balContent">{this.state.user.balance + "°"}</p></Paper> : null}
         </div>
       </div >
-    );
+    ) : null;
   }
 
   timer(index) {
     return ""
-    switch (index) {
-      case 0:
-        return "1"
-      case 1:
-        return "35"
-      case 2:
-        return "20"
-      case 3:
-        return "X"
-      default:
-        console.log("ERROR");
-        break;
-    }
   }
 
   switchState(arr) {
     if (this.state.playerMap[this.state.id]) {
-      return this.state.id === this.state.wIndex ? arr[0] : this.state.board[this.state.id] === 1 ? arr[1] : arr[2];
+      return this.state.id === this.state.wIndex ? arr[0] : this.state.board.get(this.state.id) === 1 ? arr[1] : arr[2];
     } else {
       return arr[3]
     }
@@ -188,7 +208,7 @@ class Game extends React.Component {
     return "#fcfcfc"
   }
 
-  background(id, numBids) {
+  tileBackground(id, numBids) {
 
     const base = "#C7DBF2";
     const not = "#F2C7C7";
@@ -206,7 +226,6 @@ class Game extends React.Component {
     if (this.state.wIndex === id) {
       return low;
     }
-    console.log("ID", numBids)
 
     switch (numBids) {
       case 0:
@@ -218,27 +237,36 @@ class Game extends React.Component {
     }
   }
 
-  buySquare(val) {
-    this.calcWindex(val)
-    if (val === this.state.wIndex) {
-      console.log("winning")
-    }
-    this.state.board[val] += 1;
+  async buySquare(val) {
+    let player_id = this.state.user.last;
+
+    this.state.board.set(val, this.state.board.get(val) + 1)
     this.state.playerMap[val] = true
 
-    this.setState({
-      pot: this.state.pot + 1,
-    })
+    let new_pot = this.state.pot + 1
 
-    updateTile(val, "person")
+    let wIndex = this.calcWindex(val)
+    if (val === wIndex) {
+      console.log("winning")
+    }
+
+    this.setState(() => ({
+      pot: new_pot,
+      wIndex: wIndex
+    }))
+
+    await updateTile(val, player_id);
+    await updatePlayer(player_id, val);
+    await updateGameState(this.state.gameState, new_pot, this.state.wIndex, val, this.state.memMap[val])
   }
 
-  squarePressed(val) {
-    this.setState({
+  async squarePressed(val) {
+    this.setState(() => ({
       infoMode: false,
       id: val
-    })
-    getTile(val)
+    }))
+    let obj = await getTile(val);
+    console.log("TILE:", obj)
   }
 
   infoBarPressed(index) {
@@ -261,16 +289,20 @@ class Game extends React.Component {
     }
   }
   buyBarPressed(index) {
-    this.setState({
+    this.setState(() => ({
       infoMode: true,
       id: -1,
-    })
+    }))
     switch (index) {
       case 1:
-        if (this.state.balance > 0) {
-          this.setState({
-            balance: this.state.balance - 1
-          })
+        if (!this.state.playerMap[this.state.id] && this.state.user.balance > 0) {
+          this.setState((state) => ({
+            user: {
+              balance: state.user.balance - 1,
+              first: state.user.first,
+              last: state.user.last
+            }
+          }))
           this.buySquare(this.state.id);
         }
         break;
@@ -280,12 +312,35 @@ class Game extends React.Component {
   }
 
   calcWindex(val) {
-    if (val < this.state.wIndex && this.state.board[val] <= this.state.board[this.state.wIndex]) {
-      this.setState({
-        wIndex: val
-      })
+    let wIndex = -1;
+    let map = this.state.memMap;
+    if (map[val] === undefined || isNaN(map[val])) {
+      map[val] = 0;
+    } else {
+      map[val] += 1;
+    }
+    let keys = Object.keys(map).sort((a, b) => + a - + b);
+
+    let minVal = 9999;
+    Object.values(map).forEach((e) => {
+      if (e < minVal) {
+        minVal = e;
+      }
+    });
+
+    for (let i = 0; i < keys.length; i++) {
+      if (map[keys[i]] === minVal) {
+        wIndex = keys[i];
+        break;
+      }
     }
 
+    this.setState(() => ({
+      memMap: map
+    }))
+
+    let parsed = parseInt(wIndex, 10);
+    return parsed;
   }
 }
 
