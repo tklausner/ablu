@@ -1,11 +1,11 @@
-import './App.css';
+import '../App.css';
 import React from 'react';
 import { withStyles } from "@material-ui/core/styles";
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import { Button } from '@material-ui/core';
 import Timer from './Timer'
-import { createTiles, getTile, getTiles, updateTile, updatePlayer, getUsers, getGameState, updateGameState } from "./util"
+import { createTiles, getTile, getTiles, updateTile, updatePlayer, getUsers, getGameState, updateGameState } from "../util"
 
 const styles = theme => ({
   root: {
