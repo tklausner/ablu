@@ -54,7 +54,7 @@ class Game extends React.Component {
     let tiles = await getTiles();
 
     // load bids from user by last name
-    let { bids, balance, username, uid } = this.props.user;
+    let { bids, balance, email } = this.props.user;
 
     // get game state
     let { pot, id, lub, memMap, startTime, endTime } = await getGameState("main");
@@ -72,9 +72,8 @@ class Game extends React.Component {
     this.setState(() => ({
       playerMap: bids,
       user: {
-        username: username,
         balance: balance,
-        uid: uid
+        email: email
       },
       players: playerList.length,
       pot: pot,
@@ -97,9 +96,8 @@ class Game extends React.Component {
       id: -1,
       wIndex: -1,
       user: {
-        username: "none",
         balance: -1,
-        uid: ""
+        email: ""
       },
       infoMode: true,
       playerMap: new Map(),
@@ -130,7 +128,7 @@ class Game extends React.Component {
   }
 
   greeting() {
-    console.log("Welcome " + this.state.user.username + "!")
+    console.log("Welcome " + this.state.user.email + "!")
   }
 
   render() {
@@ -260,7 +258,7 @@ class Game extends React.Component {
   }
 
   async buySquare(val) {
-    let player_id = this.state.user.uid;
+    let player_id = this.state.user.email;
 
     this.state.board.set(val, this.state.board.get(val) + 1)
     this.state.playerMap[val] = true
@@ -321,7 +319,7 @@ class Game extends React.Component {
           this.setState((state) => ({
             user: {
               balance: state.user.balance - 1,
-              uid: state.user.uid,
+              email: state.user.email,
             }
           }))
           this.buySquare(this.state.id);

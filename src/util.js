@@ -11,12 +11,10 @@ export async function createUser(email) {
   try {
     const docRef = await addDoc(collection(db, "users"), {
       email: email,
-      username: "none",
       balance: 20,
       bids: {}
     });
     return docRef;
-    console.log("Document written with ID: ", docRef.id);
   } catch (e) {
     console.error("Error adding document: ", e);
   }
@@ -103,9 +101,9 @@ export async function updateTile(id, newBid) {
   }
 }
 
-export async function updateUsername(uid, username) {
+export async function updateUsername(email, username) {
   // get player data
-  const { _id } = await get(where("uid", "==", uid), "users");
+  const { _id } = await get(where("email", "==", email), "users");
 
   let docRef = doc(db, "users", _id);
 
@@ -121,9 +119,9 @@ export async function updateUsername(uid, username) {
   }
 }
 
-export async function updatePlayer(uid, bidID) {
+export async function updatePlayer(email, bidID) {
   // get player data
-  const { _id, data } = await get(where("uid", "==", uid), "users");
+  const { _id, data } = await get(where("email", "==", email), "users");
 
   let bids = data.bids;
   let docRef = doc(db, "users", _id);
