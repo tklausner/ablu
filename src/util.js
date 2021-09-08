@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from "firebase/firestore";
-import { firebaseConfig } from "./firebase";
+import { firebaseConfig } from "../src/firebase";
 import { collection, addDoc, getDocs, updateDoc, query, where, doc, getDoc } from "firebase/firestore";
 
 

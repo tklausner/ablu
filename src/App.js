@@ -1,10 +1,10 @@
 import './App.css';
 import React, { useState } from 'react';
-import Game from "./Game.js"
-import { getUser, getGameState } from "./util"
-import Title from "./Title.js";
-import SignIn from "./SignIn.js";
-import WaitingRoom from './WaitingRoom'
+import Game from "./components/Game.js"
+import { getUser, getGameState } from "./util.js"
+import Title from "./components/Title.js";
+import SignIn from "./components/SignIn.js";
+import WaitingRoom from './components/WaitingRoom'
 
 
 function App() {
