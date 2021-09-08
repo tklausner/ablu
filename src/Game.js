@@ -4,7 +4,8 @@ import { withStyles } from "@material-ui/core/styles";
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import { Button } from '@material-ui/core';
-import { createTiles, getUser, getTile, getTiles, updateTile, updatePlayer, getUsers, getGameState, updateGameState } from "./util"
+import Timer from './Timer'
+import { createTiles, getTile, getTiles, updateTile, updatePlayer, getUsers, getGameState, updateGameState } from "./util"
 
 const styles = theme => ({
   root: {
@@ -19,37 +20,68 @@ const styles = theme => ({
 
 class Game extends React.Component {
 
+  async refresh() {
+    // load map of tiles: id -> bids[]
+    let tiles = await getTiles();
+    // get game state
+    let { pot, id, lub, memMap } = await getGameState("main");
+    // get player list
+    let playerList = await getUsers();
+    // set local state
+    this.setState(() => ({
+      players: playerList.length,
+      pot: pot,
+      gameState: id,
+      wIndex: lub,
+      memMap: memMap,
+    }))
+    this.initBoard(tiles)
+  }
+
+  convertTime(end) {
+    let current_time = new Date().getTime() / 1000;
+    let time_until_end = end.seconds - current_time;
+    return {
+      hours: Math.floor(time_until_end / 60 / 60),
+      minutes: Math.floor(time_until_end / 60 % 60),
+      seconds: Math.floor(time_until_end % 60 % 60)
+    }
+  }
+
   async componentDidMount() {
 
     // load map of tiles: id -> bids[]
     let tiles = await getTiles();
 
     // load bids from user by last name
-    let { bids, balance, first, last } = await getUser("McCartney");
+    let { bids, balance, username, uid } = this.props.user;
 
     // get game state
-    let { pot, id, lub, memMap } = await getGameState("main");
+    let { pot, id, lub, memMap, startTime, endTime } = await getGameState("main");
 
     if (tiles.size === 0) {
-      createTiles();
+      await createTiles();
     }
 
     // get player list
     let playerList = await getUsers();
 
+    let hoursMinSecs = this.convertTime(endTime);
+
     // set local state
     this.setState(() => ({
       playerMap: bids,
       user: {
-        first: first,
-        last: last,
-        balance: balance
+        username: username,
+        balance: balance,
+        uid: uid
       },
       players: playerList.length,
       pot: pot,
       gameState: id,
       wIndex: lub,
-      memMap: memMap
+      memMap: memMap,
+      hoursMinSecs: hoursMinSecs
     }))
 
     this.initBoard(tiles)
@@ -65,15 +97,20 @@ class Game extends React.Component {
       id: -1,
       wIndex: -1,
       user: {
-        first: "first",
-        last: "last",
-        balance: -1
+        username: "none",
+        balance: -1,
+        uid: ""
       },
       infoMode: true,
       playerMap: new Map(),
       loading: true,
       gameState: "none",
-      memMap: new Map()
+      memMap: new Map(),
+      hoursMinSecs: {
+        hours: 99,
+        minutes: 99,
+        seconds: 99
+      },
     };
   }
 
@@ -93,29 +130,18 @@ class Game extends React.Component {
   }
 
   greeting() {
-    console.log("Welcome " + this.state.user.first + " " + this.state.user.last + "!")
+    console.log("Welcome " + this.state.user.username + "!")
   }
 
   render() {
 
     const { classes } = this.props;
-
     return !this.state.loading ? (
       <div>
         <div className="divRow" >
           <Paper className={classes.paper} id="count"><p id="balContent">{this.state.players + " ppl"}</p></Paper>
           <Paper className={classes.paper} id="pot"><p id="balContent">{this.state.pot + "°"}</p></Paper>
-          <Grid container className={classes.root} id="timer">
-            <Grid item xs={10} >
-              <Grid container justifyContent="center" spacing={2} >
-                {[0, 1, 2, 3].map((id) => (
-                  <Grid key={id} item>
-                    <Paper className={classes.paper}> <p id="timerContent" className="bar">{this.timer(id)}</p></Paper>
-                  </Grid>
-                ))}
-              </Grid>
-            </Grid>
-          </Grid>
+          <Timer hoursMinSecs={this.state.hoursMinSecs}></Timer>
         </div>
         <Grid container className={classes.root} spacing={2}>
           <Grid item xs={12}>
@@ -152,10 +178,6 @@ class Game extends React.Component {
         </div>
       </div >
     ) : null;
-  }
-
-  timer(index) {
-    return ""
   }
 
   switchState(arr) {
@@ -238,7 +260,7 @@ class Game extends React.Component {
   }
 
   async buySquare(val) {
-    let player_id = this.state.user.last;
+    let player_id = this.state.user.uid;
 
     this.state.board.set(val, this.state.board.get(val) + 1)
     this.state.playerMap[val] = true
@@ -299,8 +321,7 @@ class Game extends React.Component {
           this.setState((state) => ({
             user: {
               balance: state.user.balance - 1,
-              first: state.user.first,
-              last: state.user.last
+              uid: state.user.uid,
             }
           }))
           this.buySquare(this.state.id);
@@ -319,6 +340,7 @@ class Game extends React.Component {
     } else {
       map[val] += 1;
     }
+
     let keys = Object.keys(map).sort((a, b) => + a - + b);
 
     let minVal = 9999;

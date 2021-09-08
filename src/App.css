@@ -89,3 +89,18 @@
   color: rgba(112, 112, 112, .6);
   margin-top: 6%;
 }
+
+#SignIn {
+  width: 180px;
+  height: 55px;
+  margin-top: 2%;
+}
+
+#SignInContent {
+ font-weight: 700;
+  font-size: 32px;
+  font-family: Helvetica, sans-serif;
+  color: rgba(112, 112, 112, .8);
+  margin-top: 0%;
+  letter-spacing: 0.1em;
+}

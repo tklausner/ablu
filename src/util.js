@@ -1,19 +1,21 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from "firebase/firestore";
 import { firebaseConfig } from "./firebase";
-import { collection, addDoc, getDocs, updateDoc, query, where, doc } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, query, where, doc, getDoc } from "firebase/firestore";
 
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export async function create_user(user) {
+export async function createUser(email) {
   try {
     const docRef = await addDoc(collection(db, "users"), {
-      _id: user.last,
-      first: user.first,
-      last: user.last,
+      email: email,
+      username: "none",
+      balance: 20,
+      bids: {}
     });
+    return docRef;
     console.log("Document written with ID: ", docRef.id);
   } catch (e) {
     console.error("Error adding document: ", e);
@@ -23,18 +25,21 @@ export async function create_user(user) {
 export async function getUsers() {
   const querySnapshot = await getDocs(collection(db, "users"));
   querySnapshot.forEach((doc) => {
-    // console.log(`${doc.id} => ${doc.data().last}`);
+    // console.log(`${doc.id} => ${doc.data().username}`);
   });
   return querySnapshot.docs;
 }
 
 export async function getGameState(id) {
-  const { data } = await get(where("id", "==", id), "games");
-  return data;
+  return getBy("id", id, "games");
 }
 
-export async function getUser(last) {
-  const { data } = await get(where("last", "==", last), "users");
+export async function getUser(label, value) {
+  return getBy(label, value, "users");
+}
+
+export async function getBy(label, value, path) {
+  const { data } = await get(where(label, "==", value), path);
   return data;
 }
 
@@ -62,8 +67,7 @@ export async function createTiles() {
 }
 
 export async function getTile(id) {
-  const { data } = await get(where("id", "==", id), "tiles");
-  return data;
+  return getBy("id", id, "tiles");
 }
 
 async function get(filter, path) {
@@ -99,9 +103,27 @@ export async function updateTile(id, newBid) {
   }
 }
 
-export async function updatePlayer(last, bidID) {
+export async function updateUsername(uid, username) {
   // get player data
-  const { _id, data } = await get(where("last", "==", last), "users");
+  const { _id } = await get(where("uid", "==", uid), "users");
+
+  let docRef = doc(db, "users", _id);
+
+  try {
+    await updateDoc(docRef, {
+      "username": username,
+    });
+    console.log("Updated username");
+    let doc = await getDoc(docRef);
+    return doc.data();
+  } catch (e) {
+    console.error("Error updating username: ", e);
+  }
+}
+
+export async function updatePlayer(uid, bidID) {
+  // get player data
+  const { _id, data } = await get(where("uid", "==", uid), "users");
 
   let bids = data.bids;
   let docRef = doc(db, "users", _id);
