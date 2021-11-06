@@ -1,14 +1,12 @@
 import './App.css';
 import React, { useState } from 'react';
-import Game from "./components/Game.js"
-import { getUser, getGameState } from "./util.js"
-import Title from "./components/Title.js";
-import SignIn from "./components/SignIn.js";
-import WaitingRoom from './components/WaitingRoom'
-
+import Game from './components/Game.js';
+import { getUser, getGameState } from './util.js';
+import Title from './components/Title.js';
+import SignIn from './components/SignIn.js';
+import WaitingRoom from './components/WaitingRoom';
 
 function App() {
-
   const [user_info, set_user] = useState(null);
   const [gameDidStart, start_game] = useState(false);
   const [waitingRoom, join_waiting_room] = useState(false);
@@ -17,47 +15,50 @@ function App() {
   const joinWaitingRoom = async (startTime) => {
     let current_time = new Date().getTime() / 1000;
     return startTime.seconds - current_time > 0;
-  }
+  };
 
   const loginGame = async (email, authenticated) => {
     try {
-      let user = await getUser("email", email);
+      let user = await getUser('email', email);
+      console.log(user);
       if (authenticated && user != null) {
-
-        set_user(user)
+        set_user(user);
         start_game(true);
 
-        let { startTime } = await getGameState("main");
+        let { startTime } = await getGameState('main');
         if (joinWaitingRoom(startTime)) {
-          console.log("JOINING WAITING ROOM", user);
+          console.log('JOINING WAITING ROOM', user);
           join_waiting_room(false);
           set_time(startTime.seconds);
         }
-        console.log("STARTING GAME", user);
+        console.log('STARTING GAME', user);
       } else {
-        console.log("FAILED TO START GAME")
+        console.log('FAILED TO START GAME 2');
       }
     } catch {
-      console.log("FAILED TO START GAME")
+      console.log('FAILED TO START GAME');
     }
-  }
+  };
 
   return gameDidStart ? (
-    <div className="App" >
+    <div className="App">
       <div style={{ marginTop: '1%', marginBottom: '3%' }}>
         <Title user={user_info} />
       </div>
-      {!waitingRoom ? <Game user={user_info} /> : <WaitingRoom startTime={startingTime} ></WaitingRoom>
-      }
-    </div >
+      {!waitingRoom ? (
+        <Game user={user_info} />
+      ) : (
+        <WaitingRoom startTime={startingTime}></WaitingRoom>
+      )}
+    </div>
   ) : (
-      <div className="App">
-        <div style={{ marginTop: '15%' }}>
-          <Title />
-        </div>
-        <SignIn loginGame={loginGame} />
+    <div className="App">
+      <div style={{ marginTop: '15%' }}>
+        <Title />
       </div>
-    );
+      <SignIn loginGame={loginGame} />
+    </div>
+  );
 }
 
 export default App;

@@ -1,9 +1,9 @@
-import React from 'react'
+import React from 'react';
 import '../App.css';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
-import { makeStyles } from "@material-ui/core/styles";
-
+import { makeStyles } from '@material-ui/core/styles';
+import { updateGame } from '../util';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -15,18 +15,18 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-
-const Timer = ({ hoursMinSecs }) => {
-
+const Timer = React.memo(({ hoursMinSecs }) => {
   const { hours = 0, minutes = 0, seconds = 60 } = hoursMinSecs;
-  const [[hrs, mins, secs], setTime] = React.useState([hours, minutes, seconds]);
+  const [[hrs, mins, secs], setTime] = React.useState([
+    hours,
+    minutes,
+    seconds,
+  ]);
   const classes = useStyles();
 
-
-  const tick = () => {
-
+  const tick = async () => {
     if (hrs <= 0 && mins <= 0 && secs <= 0)
-      reset()
+      await updateGame('main', 'active', false);
     else if (mins <= 0 && secs <= 0) {
       setTime([hrs - 1, 59, 59]);
     } else if (secs <= 0) {
@@ -39,36 +39,40 @@ const Timer = ({ hoursMinSecs }) => {
   const genContent = (id) => {
     switch (id) {
       case 0:
-        return hrs;
+        return hrs < 10 ? '0' + hrs : hrs;
       case 1:
-        return "::";
+        return 'h';
       case 2:
-        return mins;
+        return mins < 10 ? '0' + mins : mins;
       case 3:
-        return secs;
+        return 'm';
+      case 4:
+        return secs < 10 ? '0' + secs : secs;
+      case 5:
+        return 's';
       default:
         break;
     }
-  }
+  };
 
-
-  const reset = () => setTime([parseInt(hours), parseInt(minutes), parseInt(seconds)]);
-
+  const reset = () =>
+    setTime([parseInt(hours), parseInt(minutes), parseInt(seconds)]);
 
   React.useEffect(() => {
     const timerId = setInterval(() => tick(), 1000);
     return () => clearInterval(timerId);
   });
 
-
   return (
     <Grid container id="timer">
-      <Grid item xs={10} >
-        <Grid container justifyContent="center" spacing={2} >
-          {[0, 1, 2, 3].map((id) => (
+      <Grid item xs={10}>
+        <Grid container justifyContent="center" spacing={2}>
+          {[0, 1, 2, 3, 4, 5].map((id) => (
             <Grid key={id} item>
               <Paper className={classes.paper}>
-                <p id="balContent" style={{ lineHeight: "1.5em" }}>{genContent(id)}</p>
+                <p id="balContent" style={{ lineHeight: '1.5em' }}>
+                  {genContent(id)}
+                </p>
               </Paper>
             </Grid>
           ))}
@@ -76,6 +80,6 @@ const Timer = ({ hoursMinSecs }) => {
       </Grid>
     </Grid>
   );
-}
+});
 
 export default Timer;
