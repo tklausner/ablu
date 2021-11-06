@@ -27,7 +27,7 @@
 
 
 ## Screenshots
-<img src="./screenshots/img1.png" alt="Login" width="500"/>  <img src="./screenshots/img2.png" alt="Waiting Room" width="500"/>  <img src="./screenshots/img3.png" alt="In action" width="500"/> 
+<img src="./screenshots/img1.png" alt="Login" width="500"/>  <img src="./screenshots/img2.png" alt="Waiting Room" width="500"/>  <img src="./screenshots/img3.png" alt="In action" width="500"/>  <img src="./screenshots/img4.png" alt="In action" width="500"/> 
 
 
 ## Setup
