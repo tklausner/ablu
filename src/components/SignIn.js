@@ -74,7 +74,7 @@ export default function SignIn({ loginGame }) {
             label="Password"
             variant="outlined"
             onChange={(event) => handlePassword(event.target.value)}
-            type=""
+            type="password"
           />
         </div>
         <div>
